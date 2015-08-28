@@ -39,6 +39,20 @@ def setup_logger( logger_name = None,
     logger.addHandler( filehandler )
     return logger
 
+def create_directories( blist ):
+    """This will error if WORK exists.
+    Then this creates the WORK directory and the benchmark directories
+    there. When create_directories returns, it wil lbe in the WORK directory."""
+    # TODO Make this configurable
+    dirname = "WORK"
+    if os.path.exists(dirname):
+        print "%s directory exists. Please rename and try again." % dirname
+        exit(10)
+    os.mkdir(dirname)
+    os.chdir(dirname)
+    for bmark in blist:
+        os.mkdir(bmark)
+    
 def write_csvfile( tgtpath = None,
                    data = None,
                    header = None,
@@ -60,20 +74,6 @@ def write_csvfile( tgtpath = None,
             csvrow.append(result_list)
             cw.writerow(csvrow)
 
-def create_directories( blist ):
-    """This will error if WORK exists.
-    Then this creates the WORK directory and the benchmark directories
-    there. When create_directories returns, it wil lbe in the WORK directory."""
-    # TODO Make this configurable
-    dirname = "WORK"
-    if os.path.exists(dirname):
-        print "%s directory exists. Please rename and try again." % dirname
-        exit(10)
-    os.mkdir(dirname)
-    os.chdir(dirname)
-    for bmark in blist:
-        os.mkdir(bmark)
-    
 def construct_row( benchmark = None,
                    runtime_list = None,
                    gc_algo = None,
@@ -117,7 +117,7 @@ def run_benchmark( benchmark = None,
     assert( heuristic != None )
     assert( dacapo_flag or specjvm_flag )
     if dacapo_flag and specjvm_flag:
-        print "WARNING: %s found in both dacapo and specjvm. Defaulting to DaCapo."
+        print "WARNING: Benchmark %s found in both dacapo and specjvm. Defaulting to DaCapo."
         specjvm_flag = False
     print "==========================================================================="
     os.chdir( benchmark )
@@ -154,13 +154,14 @@ def run_benchmark( benchmark = None,
                           "-XX:+PrintGCTimeStamps",
                           "-XX:+PrintGC", 
                           "-Xloggc:%s" % gc_logfile ] )
+
         # Where the benchmark application is
         if dacapo_flag:
             cmd.extend( [ "-jar",
                           dacapo_path,
                           benchmark,
                           "-n%d" % number ] )
-        if specjvm_flag:
+        elif specjvm_flag:
             specjvm_dirname = os.path.dirname( specjvm_path )
             cmd.extend( [ "-Dspecjvm.home.dir=%s" % specjvm_dirname,
                           "-jar", specjvm_path,
@@ -169,6 +170,7 @@ def run_benchmark( benchmark = None,
                           "-bt", "%d" % appnum, # App thread number
                           "--iterations", "200",
                           benchmark ] )
+
         if fake:
             print "CMD:", cmd
         else:
